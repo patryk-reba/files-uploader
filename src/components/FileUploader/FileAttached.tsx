@@ -17,17 +17,20 @@ export function FileAttached({
   progress,
 }: FileAttachedProps) {
   const [isRetrying, setIsRetrying] = useState(false);
-
+  // console.log("file", file);
   const handleRetry = async () => {
     setIsRetrying(true);
     await onRetry(file, true); // Passing true to indicate it's a retry
     setIsRetrying(false);
   };
+
   return (
     <div>
       <div className="md:flex md:items-center justify-between">
         <div className="flex gap-x-3">
           <a
+            // href={`${baseURL}/${encodeURIComponent(file.id)}`}
+
             title="File Download"
             target="_blank"
             className="link-2-desktop truncate lg:w-[320px]"
@@ -48,7 +51,7 @@ export function FileAttached({
           )}
           <button
             type="button"
-            onClick={() => onRemoveAttachment(file.name)}
+            onClick={() => onRemoveAttachment(file.id)}
             title={"remove file"}
           >
             <div className="flex">

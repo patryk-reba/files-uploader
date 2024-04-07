@@ -5,64 +5,109 @@ import uploadConfig from "../priceReq-upload-config.json";
 import { v4 as uuidv4 } from "uuid";
 import { FileAttached } from "./FileAttached";
 import { toast } from "react-toastify";
-import { getUploadURL, notifyAPICompletion, uploadFileToURL } from "./mock-api";
+import {
+  getUploadURL,
+  notifyAPICompletion,
+  removeFile,
+  uploadFileToURL,
+} from "./mock-api";
 
 const { maxFiles, maxFilesize, acceptedFileTypes, minFilesize } =
   uploadConfig.upload;
 
 export default function FilesUploader() {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [uploadErrors, setUploadErrors] = useState({});
 
-  async function onUpload(file: File, retry = false) {
-    const fileId = uuidv4();
+  // console.log("uploadErrors", uploadErrors);
+  // console.log("uploadProgress", uploadProgress);
 
-    if (retry) {
-      setUploadErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[file.name];
-        return newErrors;
-      });
-    }
+  async function onUpload(file: File, retry = false) {
+    let { id, url } = await getUploadURL();
+    console.log("file", file);
+
     try {
-      const { id, url } = await getUploadURL();
-      await uploadFileToURL(file, url, (progressEvent) => {
-        const percentCompleted = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
-        setUploadProgress((prev) => ({
-          ...prev,
-          [file.name]: percentCompleted,
-        }));
-      });
+      if (retry) {
+        id = file.id;
+        setUploadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[id];
+          return newProgress;
+        });
+        setUploadErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[id];
+          return newErrors;
+        });
+      } else {
+        const newAttachment = {
+          id,
+          size: file.size,
+          name: file.name,
+        };
+        // Add the file to attachments if it's not a retry
+        setAttachments((prevAttatchedFiles) => [
+          ...prevAttatchedFiles,
+          newAttachment,
+        ]);
+      }
+      await uploadFileToURL(
+        file,
+        id,
+        url,
+        (
+          progressEvent:
+            | ProgressEvent<FileReader>
+            | { loaded: number; total: number }
+        ) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress((prev) => ({
+            ...prev,
+            [id]: percentCompleted,
+          }));
+        }
+      );
 
       await notifyAPICompletion(id);
       toast(`File ${file.name} upload success!`, { type: "success" });
     } catch (err) {
       console.error("err", err);
-      setUploadErrors((prev) => ({ ...prev, [file.name]: err.message }));
+      setUploadErrors((prev) => ({ ...prev, [id]: err.message }));
       toast(`File ${file.name} upload failed!`, { type: "error" });
     } finally {
-      setUploadProgress((prev) => {
-        const newProgress = { ...prev };
-        delete newProgress[fileId];
-        return newProgress;
-      });
+      // setUploadProgress((prev) => {
+      //   const newProgress = { ...prev };
+      //   delete newProgress[id];
+      //   return newProgress;
+      // });
     }
   }
 
-  function onRemoveAttachment(attachmentName: string) {
-    setAttachments(
-      attachments.filter((attachment) => attachment.name !== attachmentName)
-    );
-    setUploadProgress((prev) => {
-      const newProgress = { ...prev };
-      delete newProgress[attachmentName];
-      return newProgress;
-    });
-    toast(`Attachment ${attachmentName} removed`, { type: "info" });
+  async function onRemoveAttachment(attachmentId: string) {
+    try {
+      await removeFile(attachmentId);
+
+      setAttachments(
+        attachments.filter((attachment) => attachment.id !== attachmentId)
+      );
+      setUploadProgress((prev) => {
+        const newProgress = { ...prev };
+        delete newProgress[attachmentId];
+        return newProgress;
+      });
+      const removedAttachmentName = attachments.find(
+        (attachment) => attachment.id === attachmentId
+      )?.name;
+
+      toast(`Attachment ${removedAttachmentName} removed`, { type: "info" });
+    } catch (err) {
+      console.error("err", err);
+      toast(`Attachment error: ${err.message}`, { type: "error" });
+    }
   }
 
   const handleUpload = useCallback(
@@ -71,7 +116,6 @@ export default function FilesUploader() {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
-      setUploadErrors(false);
 
       try {
         if (files.length === 0) {
@@ -83,10 +127,10 @@ export default function FilesUploader() {
           throw err;
         }
 
-        setAttachments((prevAttatchedFiles) => [
-          ...prevAttatchedFiles,
-          ...files,
-        ]);
+        // setAttachments((prevAttatchedFiles) => [
+        //   ...prevAttatchedFiles,
+        //   ...files,
+        // ]);
 
         for (const file of files) {
           // validate file size
@@ -111,7 +155,6 @@ export default function FilesUploader() {
             throw new Error("Invalid file type.");
           }
           console.log("uploaded");
-
           await onUpload(file);
         }
       } catch (err) {
@@ -126,12 +169,12 @@ export default function FilesUploader() {
     <div className="flex flex-col justify-center">
       {attachments?.map((file, index) => (
         <FileAttached
-          key={file.name + index}
+          key={file.id}
           file={file}
           onRetry={onUpload}
-          error={uploadErrors[file.name]}
+          error={uploadErrors[file.id]}
           onRemoveAttachment={onRemoveAttachment}
-          progress={uploadProgress[file.name]}
+          progress={uploadProgress[file.id]}
         />
       ))}
       <DropZone
