@@ -1,0 +1,18 @@
+{
+  "upload": {
+    "maxFilesize": 2e6,
+    "minFilesize": 1,
+    "maxTotalFilesize": 20e6,
+    "maxFiles": 5,
+    "acceptedFileTypes": {
+      "application/pdf": [".pdf"],
+      "image/jpeg": [".jpeg", ".jpg"],
+      "image/png": [".png"],
+      "image/bmp": [".bmp"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "application/msword": [".doc"],
+      "application/zip": [".zip"],
+      "application/x-zip-compressed": [".zip"]
+    }
+  }
+}
