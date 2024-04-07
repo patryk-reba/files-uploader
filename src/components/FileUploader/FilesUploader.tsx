@@ -1,8 +1,7 @@
 import React, { useCallback, useState } from "react";
 import DropZone from "react-dropzone";
 import classNames from "classnames";
-import uploadConfig from "../priceReq-upload-config.json";
-import { v4 as uuidv4 } from "uuid";
+import uploadConfig from "./priceReq-upload-config.json";
 import { FileAttached } from "./FileAttached";
 import { toast } from "react-toastify";
 import {
@@ -15,44 +14,44 @@ import {
 const { maxFiles, maxFilesize, acceptedFileTypes, minFilesize } =
   uploadConfig.upload;
 
+export type Attachment = {
+  id: string;
+  size: number;
+  name: string;
+  error: string | undefined;
+  uploadProgress: number;
+};
+
 export default function FilesUploader() {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [attachments, setAttachments] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState({});
-  const [uploadErrors, setUploadErrors] = useState({});
-
-  // console.log("uploadErrors", uploadErrors);
-  // console.log("uploadProgress", uploadProgress);
-
-  async function onUpload(file: File, retry = false) {
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  async function onUpload(file: File | Attachment, retry = false) {
     let { id, url } = await getUploadURL();
-    console.log("file", file);
 
     try {
       if (retry) {
-        id = file.id;
-        setUploadProgress((prev) => {
-          const newProgress = { ...prev };
-          delete newProgress[id];
-          return newProgress;
-        });
-        setUploadErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[id];
-          return newErrors;
-        });
+        id = (file as Attachment).id;
+        setAttachments((prev) =>
+          prev.map((attachment) =>
+            attachment.id === id
+              ? { ...attachment, error: undefined, uploadProgress: 0 }
+              : attachment
+          )
+        );
       } else {
         const newAttachment = {
           id,
           size: file.size,
           name: file.name,
+          error: undefined,
+          uploadProgress: 0,
         };
-        // Add the file to attachments if it's not a retry
         setAttachments((prevAttatchedFiles) => [
           ...prevAttatchedFiles,
           newAttachment,
         ]);
       }
+
       await uploadFileToURL(
         file,
         id,
@@ -65,10 +64,13 @@ export default function FilesUploader() {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
-          setUploadProgress((prev) => ({
-            ...prev,
-            [id]: percentCompleted,
-          }));
+          setAttachments((prev) =>
+            prev.map((attachment) =>
+              attachment.id === id
+                ? { ...attachment, uploadProgress: percentCompleted }
+                : attachment
+            )
+          );
         }
       );
 
@@ -76,33 +78,26 @@ export default function FilesUploader() {
       toast(`File ${file.name} upload success!`, { type: "success" });
     } catch (err) {
       console.error("err", err);
-      setUploadErrors((prev) => ({ ...prev, [id]: err.message }));
+      setAttachments((prev) =>
+        prev.map((attachment) =>
+          attachment.id === id
+            ? { ...attachment, error: err.message }
+            : attachment
+        )
+      );
       toast(`File ${file.name} upload failed!`, { type: "error" });
-    } finally {
-      // setUploadProgress((prev) => {
-      //   const newProgress = { ...prev };
-      //   delete newProgress[id];
-      //   return newProgress;
-      // });
     }
   }
 
   async function onRemoveAttachment(attachmentId: string) {
     try {
       await removeFile(attachmentId);
-
       setAttachments(
         attachments.filter((attachment) => attachment.id !== attachmentId)
       );
-      setUploadProgress((prev) => {
-        const newProgress = { ...prev };
-        delete newProgress[attachmentId];
-        return newProgress;
-      });
       const removedAttachmentName = attachments.find(
         (attachment) => attachment.id === attachmentId
       )?.name;
-
       toast(`Attachment ${removedAttachmentName} removed`, { type: "info" });
     } catch (err) {
       console.error("err", err);
@@ -126,11 +121,6 @@ export default function FilesUploader() {
           const err = new Error(`Maximum files exceeded: ${maxFiles}`);
           throw err;
         }
-
-        // setAttachments((prevAttatchedFiles) => [
-        //   ...prevAttatchedFiles,
-        //   ...files,
-        // ]);
 
         for (const file of files) {
           // validate file size
@@ -167,14 +157,14 @@ export default function FilesUploader() {
 
   return (
     <div className="flex flex-col justify-center">
-      {attachments?.map((file, index) => (
+      {attachments?.map((attachment) => (
         <FileAttached
-          key={file.id}
-          file={file}
+          key={attachment.id}
+          file={attachment}
           onRetry={onUpload}
-          error={uploadErrors[file.id]}
+          error={attachment.error}
           onRemoveAttachment={onRemoveAttachment}
-          progress={uploadProgress[file.id]}
+          progress={attachment.uploadProgress}
         />
       ))}
       <DropZone
@@ -185,7 +175,7 @@ export default function FilesUploader() {
           <div {...getRootProps()} className="lg:w-[1000px]">
             <div
               className={classNames(
-                "flex flex-col items-center justify-center border-slate-700/70 md:p-10 lg:border-2 lg:border-dashed  ",
+                "flex flex-col items-center justify-center border-slate-700/70 md:p-10 lg:border-2 lg:border-dashed",
                 {
                   "bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30":
                     isDragOver,

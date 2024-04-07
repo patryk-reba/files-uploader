@@ -1,7 +1,7 @@
 import React from "react";
 
 interface UploadStatusProps {
-  error: string;
+  error: string | undefined;
   progress: number;
   isRetrying: boolean;
 }

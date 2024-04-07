@@ -3,21 +3,23 @@ import { v4 as uuidv4 } from "uuid";
 export const getUploadURL = async (): Promise<{ id: string; url: string }> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve({
-        id: uuidv4(), // Generate a UUID for each function call
-        url: "https://example.com/upload",
-      });
-    }, 10); // Simulate network delay
+      const id = uuidv4(); // Generate a UUID for each function call
+      const url = "https://example.com/upload";
+      console.log(`GET ${url}/${id}`); // Log the URL for debugging
+      resolve({ id, url });
+    }, 100); // Simulate network delay
   });
 };
 
 // Mock function to upload a file to a URL
 export const uploadFileToURL = async (file, id, url, onUploadProgress) => {
   return new Promise((resolve, reject) => {
-    console.log(`PUT ${url}/${id}`); // Log the URL for debugging
+    console.log(`POST ${url}/${id}`); // Log the URL for debugging
     let progress = 0;
     const progressInterval = setInterval(() => {
-      progress += 10; // increment progress by 10% every 200ms
+      progress += Math.random() * 15 + 5; // Simulate variable progress increments
+      progress = Math.min(progress, 100); // Ensure progress doesn't exceed 100%
+
       onUploadProgress({ loaded: progress, total: 100 });
       if (progress >= 100) {
         clearInterval(progressInterval);
