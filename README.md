@@ -1,8 +1,38 @@
-# React + Vite
+# Files Uploader
+==============
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is a robust file uploader built with React and Vite. It provides a user-friendly interface for uploading files, tracking upload progress, and handling errors.
 
-Currently, two official plugins are available:
+Features
+--------
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+-   **Drag and Drop**: Easily upload files by dragging and dropping them into the uploader.
+-   **Progress Tracking**: Track the progress of your file uploads in real-time.
+-   **Error Handling**: The uploader handles errors gracefully and provides useful error messages.
+-   **File Removal**: Remove files from the uploader with a simple click.
+
+Installation
+------------
+
+1.  Clone the repository:
+
+git clone https://github.com/yourusername/files-uploader.git
+
+1.  Navigate to the project directory:
+
+cd files-uploader
+
+1.  Install the dependencies:
+
+npm install
+
+Usage
+-----
+
+To start the development server, run:
+
+```npm run dev```
+
+To build the project for production, run:
+
+```npm run build```
