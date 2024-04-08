@@ -23,7 +23,7 @@ export const uploadFileToURL = async (file, id, url, onUploadProgress) => {
       onUploadProgress({ loaded: progress, total: 100 });
       if (progress >= 100) {
         clearInterval(progressInterval);
-        if (Math.random() > 0.4) {
+        if (Math.random() > 0.2) {
           // Simulate a success rate
           resolve({ success: true });
         } else {
